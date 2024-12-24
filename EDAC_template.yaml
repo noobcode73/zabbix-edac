@@ -1,0 +1,210 @@
+zabbix_export:
+  version: '7.0'
+  template_groups:
+    - uuid: 7df96b18c230490a9a0a9e2307226338
+      name: Templates
+  templates:
+    - uuid: 3d042dd81ec44e5a8c31b0ed4afa50b0
+      template: Template_EDAC
+      name: Template_EDAC
+      description: 'Read EDAC data (ECC errors)'
+      groups:
+        - name: Templates
+      items:
+        - uuid: 3c28bc353bbc4639af887a606100b251
+          name: 'EDAC JSON'
+          key: edac
+          history: '0'
+          value_type: TEXT
+          trends: '0'
+          tags:
+            - tag: Application
+              value: 'EDAC - Raw'
+      discovery_rules:
+        - uuid: 73010786be4141a5999bdecdc84b184e
+          name: 'Discover DIMM'
+          type: DEPENDENT
+          key: edac.discovery
+          delay: '0'
+          enabled_lifetime_type: DISABLE_NEVER
+          item_prototypes:
+            - uuid: 2bbc28af81a54b1da6ceed0b7917ef59
+              name: '{#DIMM_MC} - {#DIMM_NAME} - Errors Correctable'
+              type: DEPENDENT
+              key: 'edac.ce.[{#DIMM_MC_NAME}]'
+              delay: '0'
+              history: 30d
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.[''{#DIMM_MC}''].dimms.[''{#DIMM_NAME}''].dimm_ce_count'
+              master_item:
+                key: edac
+              tags:
+                - tag: Application
+                  value: EDAC
+              trigger_prototypes:
+                - uuid: dffccfd81c4543be84c290a3f820ddfb
+                  expression: 'last(/Template_EDAC/edac.ce.[{#DIMM_MC_NAME}])>{$EDAC_CE_THRESH}'
+                  name: '{#MC} - {#DIMM_NAME} - Correctable errors detected: {ITEM.LASTVALUE}'
+                  priority: HIGH
+            - uuid: c3f7939041de47dbb86f4ad6ffbb462e
+              name: '{#DIMM_MC} - {#DIMM_NAME} - Location'
+              type: DEPENDENT
+              key: 'edac.location[{#DIMM_MC_NAME}]'
+              delay: '0'
+              history: 1h
+              value_type: TEXT
+              trends: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.[''{#DIMM_MC}''].dimms.[''{#DIMM_NAME}''].dimm_location'
+              master_item:
+                key: edac
+              tags:
+                - tag: Application
+                  value: EDAC
+            - uuid: 4fc238b449b74a26a9d3ffcfc0c3ef62
+              name: '{#DIMM_MC} - {#DIMM_NAME} - Size'
+              type: DEPENDENT
+              key: 'edac.size[{#DIMM_MC_NAME}]'
+              delay: '0'
+              history: 1h
+              trends: '0'
+              units: B
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.[''{#DIMM_MC}''].dimms.[''{#DIMM_NAME}''].size'
+                - type: MULTIPLIER
+                  parameters:
+                    - '1048576'
+              master_item:
+                key: edac
+              tags:
+                - tag: Application
+                  value: EDAC
+            - uuid: cf9379669e5b4bf2b2fa572fd5b90d51
+              name: '{#DIMM_MC} - {#DIMM_NAME} - Errors Uncorrectable'
+              type: DEPENDENT
+              key: 'edac.ue[{#DIMM_MC_NAME}]'
+              delay: '0'
+              history: 30d
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.[''{#DIMM_MC}''].dimms.[''{#DIMM_NAME}''].dimm_ue_count'
+              master_item:
+                key: edac
+              tags:
+                - tag: Application
+                  value: EDAC
+              trigger_prototypes:
+                - uuid: fa7fcb0402214b9e9f79d30e4631fdb4
+                  expression: 'last(/Template_EDAC/edac.ue[{#DIMM_MC_NAME}])>{$EDAC_UE_THRESH}'
+                  name: '{#MC} - {#DIMM} - Uncorrectable errors detected: {ITEM.LASTVALUE}'
+                  priority: HIGH
+          master_item:
+            key: edac
+          lld_macro_paths:
+            - lld_macro: '{#DIMM_MC_NAME}'
+              path: $.mc_name
+            - lld_macro: '{#DIMM_MC}'
+              path: $.mc
+            - lld_macro: '{#DIMM_NAME}'
+              path: $.name
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$..dimms.*'
+        - uuid: f77e264f3d314366b447a761ee9a3e96
+          name: 'Discover MC'
+          type: DEPENDENT
+          key: edac.mc_discovery
+          delay: '0'
+          item_prototypes:
+            - uuid: 251d4b57b6504ce5b73e140fe64e7dc3
+              name: '{#MC} - Errors Correctable'
+              type: DEPENDENT
+              key: 'edac.ce.[{#MC}]'
+              delay: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.[''{#MC}''].info.ce_count'
+              master_item:
+                key: edac
+              tags:
+                - tag: Application
+                  value: EDAC
+              trigger_prototypes:
+                - uuid: 253728f6222440c2955ac744436ffe29
+                  expression: 'last(/Template_EDAC/edac.ce.[{#MC}])>{$EDAC_CE_THRESH}'
+                  name: '{#MC} - Correctable errors detected: {ITEM.LASTVALUE}'
+                  priority: HIGH
+            - uuid: ce5d3a2ef4074d73acc97f75d08abda7
+              name: '{#MC} - Name'
+              type: DEPENDENT
+              key: 'edac.mc_name[{#MC}]'
+              delay: '0'
+              history: 1h
+              value_type: TEXT
+              trends: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.[''{#MC}''].info.mc_name'
+              master_item:
+                key: edac
+              tags:
+                - tag: Application
+                  value: EDAC
+            - uuid: 5dc2d278aa254b78b56df55276ef8d88
+              name: '{#MC} - Size'
+              type: DEPENDENT
+              key: 'edac.size[{#MC}]'
+              delay: '0'
+              units: B
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.[''{#MC}''].info.size_mb'
+              master_item:
+                key: edac
+              tags:
+                - tag: Application
+                  value: EDAC
+            - uuid: 4660a5b3bd5f412b85201bb2b1c17fd9
+              name: '{#MC} - Errors Uncorrectable'
+              type: DEPENDENT
+              key: 'edac.ue[{#MC}]'
+              delay: '0'
+              preprocessing:
+                - type: JSONPATH
+                  parameters:
+                    - '$.[''{#MC}''].info.ue_count'
+              master_item:
+                key: edac
+              tags:
+                - tag: Application
+                  value: EDAC
+              trigger_prototypes:
+                - uuid: c4a5b33a810747e4a9ae34bd78909e59
+                  expression: 'last(/Template_EDAC/edac.ue[{#MC}])>{$EDAC_UE_THRESH}'
+                  name: '{#MC} - Uncorrectable errors detected: {ITEM.LASTVALUE}'
+                  priority: HIGH
+          master_item:
+            key: edac
+          lld_macro_paths:
+            - lld_macro: '{#MC}'
+              path: $.info.mc
+          preprocessing:
+            - type: JSONPATH
+              parameters:
+                - '$.*'
+      macros:
+        - macro: '{$EDAC_CE_THRESH}'
+          value: '0'
+        - macro: '{$EDAC_UE_THRESH}'
+          value: '0'
