@@ -1,0 +1,257 @@
+zabbix_export:
+  version: '6.0'
+  date: '2025-07-15T09:06:36Z'
+  groups:
+    -
+      uuid: a571c0d144b14fd4a87a9d9b2aa9fcd6
+      name: Templates/Applications
+  templates:
+    -
+      uuid: 4f2ddb9645584a8ba48c6fbffd7b9bcf
+      template: 'Template APP EDAC'
+      name: 'Template APP EDAC'
+      description: 'Read EDAC data (ECC errors)'
+      groups:
+        -
+          name: Templates/Applications
+      items:
+        -
+          uuid: 54a08616c20145109f800d0f7cfe97a5
+          name: 'EDAC JSON'
+          key: edac
+          delay: 10m
+          history: '0'
+          trends: '0'
+          value_type: TEXT
+          tags:
+            -
+              tag: Application
+              value: 'EDAC - Raw'
+      discovery_rules:
+        -
+          uuid: 8732ce3e2936488e841e636e9f7f9e28
+          name: 'Discover DIMM'
+          type: DEPENDENT
+          key: edac.discovery
+          delay: '0'
+          item_prototypes:
+            -
+              uuid: 8dedbbf5c4314b94ba8279e6a1dea08a
+              name: '{#DIMM_MC} - {#DIMM_NAME} - Errors Correctable'
+              type: DEPENDENT
+              key: 'edac.ce.[{#DIMM_MC_NAME}]'
+              delay: '0'
+              history: 30d
+              preprocessing:
+                -
+                  type: JSONPATH
+                  parameters:
+                    - '$.[''{#DIMM_MC}''].dimms.[''{#DIMM_NAME}''].dimm_ce_count'
+              master_item:
+                key: edac
+              tags:
+                -
+                  tag: Application
+                  value: EDAC
+              trigger_prototypes:
+                -
+                  uuid: 2dfb502f0e8b4ec09130ff28dfc84adb
+                  expression: 'last(/Template APP EDAC/edac.ce.[{#DIMM_MC_NAME}])> {$EDAC_CE_THRESH}'
+                  name: '{#DIMM_MC} - {#DIMM_NAME} - Correctable errors detected: {ITEM.LASTVALUE}'
+                  priority: HIGH
+            -
+              uuid: 4ed637e8e2a44a30ac9d083159a42995
+              name: '{#DIMM_MC} - {#DIMM_NAME} - Location'
+              type: DEPENDENT
+              key: 'edac.location[{#DIMM_MC_NAME}]'
+              delay: '0'
+              history: 1h
+              trends: '0'
+              value_type: TEXT
+              preprocessing:
+                -
+                  type: JSONPATH
+                  parameters:
+                    - '$.[''{#DIMM_MC}''].dimms.[''{#DIMM_NAME}''].dimm_location'
+              master_item:
+                key: edac
+              tags:
+                -
+                  tag: Application
+                  value: EDAC
+            -
+              uuid: e6cc165c271f49a8adac7fc143b8ae48
+              name: '{#DIMM_MC} - {#DIMM_NAME} - Size'
+              type: DEPENDENT
+              key: 'edac.size[{#DIMM_MC_NAME}]'
+              delay: '0'
+              history: 1h
+              trends: '0'
+              units: B
+              preprocessing:
+                -
+                  type: JSONPATH
+                  parameters:
+                    - '$.[''{#DIMM_MC}''].dimms.[''{#DIMM_NAME}''].size'
+                -
+                  type: MULTIPLIER
+                  parameters:
+                    - '1048576'
+              master_item:
+                key: edac
+              tags:
+                -
+                  tag: Application
+                  value: EDAC
+            -
+              uuid: 050a323530a346f59fb27acff0eca090
+              name: '{#DIMM_MC} - {#DIMM_NAME} - Errors Uncorrectable'
+              type: DEPENDENT
+              key: 'edac.ue[{#DIMM_MC_NAME}]'
+              delay: '0'
+              history: 30d
+              preprocessing:
+                -
+                  type: JSONPATH
+                  parameters:
+                    - '$.[''{#DIMM_MC}''].dimms.[''{#DIMM_NAME}''].dimm_ue_count'
+              master_item:
+                key: edac
+              tags:
+                -
+                  tag: Application
+                  value: EDAC
+              trigger_prototypes:
+                -
+                  uuid: e721f6bfabfc48c3a54dc62608386ff6
+                  expression: 'last(/Template APP EDAC/edac.ue[{#DIMM_MC_NAME}])>{$EDAC_UE_THRESH}'
+                  name: '{#DIMM_MC} - {#DIMM} - Uncorrectable errors detected: {ITEM.LASTVALUE}'
+                  priority: HIGH
+          master_item:
+            key: edac
+          lld_macro_paths:
+            -
+              lld_macro: '{#DIMM_MC}'
+              path: $.mc
+            -
+              lld_macro: '{#DIMM_MC_NAME}'
+              path: $.mc_name
+            -
+              lld_macro: '{#DIMM_NAME}'
+              path: $.name
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - '$..dimms.*'
+        -
+          uuid: 9f14be9e045d43dab4180a0f87f07794
+          name: 'Discover MC'
+          type: DEPENDENT
+          key: edac.mc_discovery
+          delay: '0'
+          item_prototypes:
+            -
+              uuid: 4769f2bfa13446d2bd397577ee5a9477
+              name: '{#MC} - Errors Correctable'
+              type: DEPENDENT
+              key: 'edac.ce.[{#MC}]'
+              delay: '0'
+              history: 31d
+              preprocessing:
+                -
+                  type: JSONPATH
+                  parameters:
+                    - '$.[''{#MC}''].info.ce_count'
+              master_item:
+                key: edac
+              tags:
+                -
+                  tag: Application
+                  value: EDAC
+              trigger_prototypes:
+                -
+                  uuid: ad9ff2455e704871bbdf72022f8c7a5f
+                  expression: 'last(/Template APP EDAC/edac.ce.[{#MC}])>{$EDAC_CE_THRESH}'
+                  name: '{#MC} - Correctable errors detected: {ITEM.LASTVALUE}'
+                  priority: HIGH
+            -
+              uuid: 9febb9d6daad4d79b0ec869e7b2858c6
+              name: '{#MC} - Name'
+              type: DEPENDENT
+              key: 'edac.mc_name[{#MC}]'
+              delay: '0'
+              history: 1h
+              trends: '0'
+              value_type: TEXT
+              preprocessing:
+                -
+                  type: JSONPATH
+                  parameters:
+                    - '$.[''{#MC}''].info.mc_name'
+              master_item:
+                key: edac
+              tags:
+                -
+                  tag: Application
+                  value: EDAC
+            -
+              uuid: 4d441091f8fb45cf8d3eed4aca8b12ba
+              name: '{#MC} - Size'
+              type: DEPENDENT
+              key: 'edac.size[{#MC}]'
+              delay: '0'
+              history: 31d
+              preprocessing:
+                -
+                  type: JSONPATH
+                  parameters:
+                    - '$.[''{#MC}''].info.size_mb'
+              master_item:
+                key: edac
+              tags:
+                -
+                  tag: Application
+                  value: EDAC
+            -
+              uuid: f48ad6660c554e52858f698dc57331f8
+              name: '{#MC} - Errors Uncorrectable'
+              type: DEPENDENT
+              key: 'edac.ue[{#MC}]'
+              delay: '0'
+              history: 31d
+              preprocessing:
+                -
+                  type: JSONPATH
+                  parameters:
+                    - '$.[''{#MC}''].info.ue_count'
+              master_item:
+                key: edac
+              tags:
+                -
+                  tag: Application
+                  value: EDAC
+              trigger_prototypes:
+                -
+                  uuid: 16b7a9e6e90c48e8832a1a0b8c0158bf
+                  expression: 'last(/Template APP EDAC/edac.ue[{#MC}])>{$EDAC_UE_THRESH}'
+                  name: '{#MC} - Uncorrectable errors detected: {ITEM.LASTVALUE}'
+                  priority: HIGH
+          master_item:
+            key: edac
+          lld_macro_paths:
+            -
+              lld_macro: '{#MC}'
+              path: $.info.mc
+          preprocessing:
+            -
+              type: JSONPATH
+              parameters:
+                - '$.*'
+      macros:
+        -
+          macro: '{$EDAC_CE_THRESH}'
+          value: '0'
+        -
+          macro: '{$EDAC_UE_THRESH}'
+          value: '0'
